@@ -9,7 +9,7 @@ def str2num (message) :
     return int.from_bytes(b, 'big', signed=False)
 
 
-# converts int to string
+# converts integer to string
 def num2str (num) :
     b = num.to_bytes(ceil(num.bit_length() / 8), 'big', signed=False)
     return b.decode("utf-8")
@@ -25,7 +25,7 @@ def egcd (a, b) :
         return g, x - (b // a) * y, y
 
 
-# Modular inverse of a (mod m)
+# modular inverse of a (mod m)
 def modinv (a, m) :
     g, x, y = egcd(a, m)
     if g != 1:
@@ -39,7 +39,7 @@ def probPrime (p) :
     return pow(2, p-1, p) == 1
 
 
-# Generate random prime of size bits
+# generate random prime of size bits
 # uses operating system's random number generator
 # which may or may not be secure
 def randPrime (bits) :
@@ -54,7 +54,7 @@ def phi (p, q) :
     return (p-1)*(q-1)
 
 
-# Generate RSA keys (e, d, n, p, q) where n has size bitsize
+# generate RSA keys (e, d, n, p, q) where n has size bitsize
 def genKeys (bitsize) :
     e = 65537  # set e constant for quick encryption
     pbits = ceil(bitsize / 2)
@@ -70,25 +70,34 @@ def genKeys (bitsize) :
     return e, modinv(e, phi(p, q)), p*q, p, q
 
 
-# Encrypt message with RSA public key (e, n)
-# Warning: messages are not padded!
+# encrypt message with RSA public key (e, n)
+# warning: messages are not padded!
 def encrypt (message, e, n) :
     return pow(str2num(message), e, n)
 
 
-# Decrypt cipher with RSA private key (d, n)
+# decrypt cipher with RSA private key (d, n, p, q)
+# using Chinese Remainder Theorem
 # takes cipher in the form of int
-def decrypt (num, d, n) :
-    return num2str(pow(num, d, n))
+def decrypt (num, d, n, p, q) :
+    dp = d % (p-1)
+    dq = d % (q-1)
+    qinv = modinv(q, p)
+    m1 = pow(num, dp, p)
+    m2 = pow(num, dq, q)
+    h = ((qinv*(m1-m2) % p) + p) % p
+    return num2str((m2 + h*q) % n)
 
 
 if __name__ == "__main__":
     e, d, n, p, q = genKeys(1024)
     m = "hello world"
     c = encrypt(m, e, n)
+    print("p:", p)
+    print("q:", q)
     print("e:", e)
     print("d:", d)
     print("n:", n)
     print("message:", m)
     print("encrypted message:", c)
-    print("decrypted message:", decrypt(c, d, n))
+    print("decrypted message:", decrypt(c, d, n, p, q))
